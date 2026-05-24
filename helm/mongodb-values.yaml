@@ -1,0 +1,18 @@
+# MongoDB Helm values — same config used on both EKS and AKS
+auth:
+  rootPassword: pocpassword123
+  username: appuser
+  password: pocpassword123
+  database: appdb
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"

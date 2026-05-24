@@ -1,0 +1,16 @@
+# PostgreSQL Helm values — same config used on both EKS and AKS
+auth:
+  postgresPassword: pocpassword123
+  database: druid_metadata
+
+primary:
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"

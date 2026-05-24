@@ -1,0 +1,15 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfstate*
+
+# Helm backup files created by sed
+helm/*.bak
+
+# Dump files from migration
+/tmp/poc-migration-dump/
+
+# macOS
+.DS_Store

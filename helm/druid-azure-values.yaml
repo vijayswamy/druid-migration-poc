@@ -1,0 +1,82 @@
+# Druid on Azure AKS — Azure Blob deep storage (DESTINATION cluster)
+
+configVars:
+  DRUID_USE_CONTAINER_IP: "true"
+
+  druid_extensions_loadList: '["druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage", "druid-azure-extensions"]'
+
+  # Metadata — PostgreSQL inside AKS
+  druid_metadata_storage_type: postgresql
+  druid_metadata_storage_connector_connectURI: jdbc:postgresql://postgresql.databases.svc.cluster.local:5432/druid_metadata
+  druid_metadata_storage_connector_user: postgres
+  druid_metadata_storage_connector_password: pocpassword123
+
+  # Deep storage — Azure Blob
+  # druid_azure_account and druid_azure_key are injected at deploy time from terraform output (see 1-deploy-apps.sh)
+  druid_storage_type: azure
+  druid_azure_account: druidpocdruid
+  druid_azure_key: INJECTED_AT_DEPLOY_TIME
+  druid_azure_container: druid-segments
+  druid_azure_prefix: druid/segments
+
+  # Indexer logs to Azure Blob
+  druid_indexer_logs_type: azure
+  druid_indexer_logs_container: druid-segments
+  druid_indexer_logs_prefix: druid/indexing-logs
+
+  druid_emitter: noop
+
+postgresql:
+  enabled: false
+
+zookeeper:
+  enabled: true
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/zookeeper
+    tag: 3.9.2-debian-12-r15
+
+broker:
+  replicaCount: 1
+  config:
+    DRUID_XMX: 512m
+    DRUID_XMS: 512m
+    DRUID_MAXDIRECTMEMORYSIZE: 400m
+    druid_processing_buffer_sizeBytes: '50000000'
+    druid_processing_numThreads: 1
+
+coordinator:
+  replicaCount: 1
+  config:
+    DRUID_XMX: 256m
+    DRUID_XMS: 256m
+
+historical:
+  replicaCount: 1
+  config:
+    DRUID_XMX: 512m
+    DRUID_XMS: 512m
+    DRUID_MAXDIRECTMEMORYSIZE: 400m
+    druid_processing_buffer_sizeBytes: '50000000'
+    druid_processing_numThreads: 1
+    druid_segmentCache_locations: '[{"path":"/opt/druid/var/druid/segment-cache","maxSize":10000000000}]'
+  persistence:
+    enabled: true
+    size: 10Gi
+
+middleManager:
+  replicaCount: 1
+  config:
+    DRUID_XMX: 512m
+    DRUID_XMS: 512m
+    druid_indexer_runner_javaOptsArray: '["-server", "-Xmx512m", "-Xms256m"]'
+  persistence:
+    enabled: true
+    size: 5Gi
+
+router:
+  enabled: true
+  replicaCount: 1
+  config:
+    DRUID_XMX: 128m
+    DRUID_XMS: 128m
