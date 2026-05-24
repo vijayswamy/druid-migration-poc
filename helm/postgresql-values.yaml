@@ -1,6 +1,6 @@
 # PostgreSQL Helm values — same config used on both EKS and AKS
 auth:
-  postgresPassword: pocpassword123
+  postgresPassword: YOUR_DB_PASSWORD
   database: druid_metadata
 
 primary:

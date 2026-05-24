@@ -46,11 +46,11 @@ echo ""
 echo "=== [2/3] MongoDB Validation ==="
 
 EKS_MONGO_COUNT=$(kubectl exec -n databases mongodb-0 --context eks-source -- \
-  mongosh appdb -u appuser -p pocpassword123 --authenticationDatabase appdb --quiet \
+  mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --quiet \
   --eval "db.orders.countDocuments()")
 
 AKS_MONGO_COUNT=$(kubectl exec -n databases mongodb-0 --context aks-destination -- \
-  mongosh appdb -u appuser -p pocpassword123 --authenticationDatabase appdb --quiet \
+  mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --quiet \
   --eval "db.orders.countDocuments()")
 
 check "orders document count" "${EKS_MONGO_COUNT}" "${AKS_MONGO_COUNT}"

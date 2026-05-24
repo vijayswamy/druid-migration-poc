@@ -74,15 +74,23 @@ jobs:
           retention-days: 30
 
       - name: Deploy apps on both clusters
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: bash scripts/1-deploy-apps.sh
 
       - name: Load dummy data into EKS
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: bash scripts/2-load-data.sh
 
       - name: Migrate data EKS → AKS
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: bash scripts/3-migrate.sh
 
       - name: Validate migration
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: bash scripts/4-validate.sh
 
       - name: Print UI access instructions

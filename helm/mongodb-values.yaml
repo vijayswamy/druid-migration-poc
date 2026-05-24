@@ -1,8 +1,8 @@
 # MongoDB Helm values — same config used on both EKS and AKS
 auth:
-  rootPassword: pocpassword123
+  rootPassword: YOUR_DB_PASSWORD
   username: appuser
-  password: pocpassword123
+  password: YOUR_DB_PASSWORD
   database: appdb
 
 persistence:

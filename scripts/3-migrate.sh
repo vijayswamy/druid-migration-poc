@@ -47,7 +47,7 @@ echo "=== [2/3] Migrating MongoDB ==="
 
 echo "  Dumping from EKS..."
 kubectl exec -n databases mongodb-0 --context eks-source -- \
-  mongodump --uri="mongodb://appuser:pocpassword123@localhost:27017/appdb?authSource=appdb" \
+  mongodump --uri="mongodb://appuser:${DB_PASSWORD}@localhost:27017/appdb?authSource=appdb" \
   --out=/tmp/mongodump
 
 kubectl cp databases/mongodb-0:/tmp/mongodump "${DUMP_DIR}/mongodump" \
@@ -60,7 +60,7 @@ kubectl cp "${DUMP_DIR}/mongodump" \
 
 echo "  Restoring on AKS..."
 kubectl exec -n databases mongodb-0 --context aks-destination -- \
-  mongorestore --uri="mongodb://appuser:pocpassword123@localhost:27017/appdb?authSource=appdb" \
+  mongorestore --uri="mongodb://appuser:${DB_PASSWORD}@localhost:27017/appdb?authSource=appdb" \
   /tmp/mongodump
 
 echo "  MongoDB migration done."

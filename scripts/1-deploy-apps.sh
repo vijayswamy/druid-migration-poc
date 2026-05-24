@@ -23,17 +23,25 @@ cd -
 
 echo ""
 echo "--- Generating dynamic Helm overrides from Terraform outputs ---"
-# Write dynamic values to a temp file — avoids permanently patching YAML files
-# so every make up/destroy cycle works cleanly with fresh infrastructure values
+
+# DB_PASSWORD must be set as env var (from GitHub secret or export before running locally)
+if [ -z "${DB_PASSWORD}" ]; then
+  echo "ERROR: DB_PASSWORD env var is not set."
+  echo "  Run: export DB_PASSWORD=yourpassword"
+  exit 1
+fi
+
 cat > /tmp/druid-aws-override.yaml <<EOF
 configVars:
   druid_storage_bucket: "${S3_BUCKET}"
+  druid_metadata_storage_connector_password: "${DB_PASSWORD}"
 EOF
 
 cat > /tmp/druid-azure-override.yaml <<EOF
 configVars:
   druid_azure_account: "${STORAGE_ACCOUNT}"
   druid_azure_key: "${STORAGE_KEY}"
+  druid_metadata_storage_connector_password: "${DB_PASSWORD}"
   druid_indexer_logs_container: druid-segments
 EOF
 
@@ -57,6 +65,7 @@ helm upgrade --install postgresql bitnami/postgresql \
   --kube-context eks-source \
   --namespace databases \
   --values ../helm/postgresql-values.yaml \
+  --set auth.postgresPassword="${DB_PASSWORD}" \
   --wait --timeout 5m
 
 echo ""
@@ -65,6 +74,8 @@ helm upgrade --install mongodb bitnami/mongodb \
   --kube-context eks-source \
   --namespace databases \
   --values ../helm/mongodb-values.yaml \
+  --set auth.rootPassword="${DB_PASSWORD}" \
+  --set auth.password="${DB_PASSWORD}" \
   --wait --timeout 5m
 
 echo ""
@@ -102,6 +113,7 @@ helm upgrade --install postgresql bitnami/postgresql \
   --kube-context aks-destination \
   --namespace databases \
   --values ../helm/postgresql-values.yaml \
+  --set auth.postgresPassword="${DB_PASSWORD}" \
   --wait --timeout 5m
 
 echo ""
@@ -110,6 +122,8 @@ helm upgrade --install mongodb bitnami/mongodb \
   --kube-context aks-destination \
   --namespace databases \
   --values ../helm/mongodb-values.yaml \
+  --set auth.rootPassword="${DB_PASSWORD}" \
+  --set auth.password="${DB_PASSWORD}" \
   --wait --timeout 5m
 
 echo ""

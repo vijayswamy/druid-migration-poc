@@ -9,7 +9,7 @@ configVars:
   druid_metadata_storage_type: postgresql
   druid_metadata_storage_connector_connectURI: jdbc:postgresql://postgresql.databases.svc.cluster.local:5432/druid_metadata
   druid_metadata_storage_connector_user: postgres
-  druid_metadata_storage_connector_password: pocpassword123
+  druid_metadata_storage_connector_password: YOUR_DB_PASSWORD
 
   # Deep storage — S3
   # druid_storage_bucket is injected at deploy time from terraform output (see 1-deploy-apps.sh)

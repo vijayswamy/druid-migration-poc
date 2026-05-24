@@ -42,7 +42,7 @@ echo ""
 echo "=== Loading dummy data into MongoDB (EKS) ==="
 
 kubectl exec -n databases mongodb-0 --context eks-source -- \
-  mongosh appdb -u appuser -p pocpassword123 --authenticationDatabase appdb --eval "
+  mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --eval "
     db.orders.drop();
     db.orders.insertMany([
       { order_id: 1, customer: 'Vijay',  product: 'Laptop',  amount: 75000, status: 'delivered' },
@@ -109,7 +109,7 @@ echo " DONE: Dummy data loaded on EKS!"
 echo ""
 echo " Verify:"
 echo "  PostgreSQL: kubectl exec -n databases postgresql-0 --context eks-source -- psql -U postgres -d druid_metadata -c 'SELECT * FROM employees;'"
-echo "  MongoDB:    kubectl exec -n databases mongodb-0 --context eks-source -- mongosh appdb -u appuser -p pocpassword123 --authenticationDatabase appdb --eval 'db.orders.find()'"
+echo "  MongoDB:    kubectl exec -n databases mongodb-0 --context eks-source -- mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --eval 'db.orders.find()'"
 echo "  Druid UI:   kubectl port-forward -n druid svc/druid-router 8888:8888 --context eks-source"
 echo ""
 echo " Next: Run scripts/3-migrate.sh"
