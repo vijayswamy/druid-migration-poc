@@ -43,18 +43,69 @@ druid-migration-poc/
 │   ├── druid-azure-values.yaml     ← Druid config for AKS (Azure Blob)
 │   ├── postgresql-values.yaml      ← PostgreSQL config (same for both)
 │   └── mongodb-values.yaml         ← MongoDB config (same for both)
+├── .github/
+│   └── workflows/
+│       ├── create.yml              ← GitHub Actions: Create Demo (manual trigger)
+│       └── destroy.yml             ← GitHub Actions: Destroy Demo (manual trigger)
 └── scripts/
+    ├── 0-create.sh                 ← CREATE everything (one script)
     ├── 1-deploy-apps.sh            ← Helm install on both clusters
     ├── 2-load-data.sh              ← Load dummy data into EKS
     ├── 3-migrate.sh                ← Migrate data EKS → AKS
-    └── 4-validate.sh              ← Compare counts EKS vs AKS
+    ├── 4-validate.sh               ← Compare counts EKS vs AKS
+    └── 5-destroy.sh                ← DESTROY everything (one script)
 ```
 
 ---
 
-## Pre-requisites
+## GitHub Actions (Recommended — No Local Setup Needed)
 
-Install these tools before running:
+Run the demo directly from GitHub — no tools needed on your machine.
+
+### Setup GitHub Secrets (one-time)
+
+Go to: **Settings → Secrets and variables → Actions → New repository secret**
+
+| Secret | Description |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+| `AZURE_CREDENTIALS` | Azure service principal JSON (see below) |
+| `DB_PASSWORD` | Password for PostgreSQL + MongoDB (both AWS and Azure) |
+
+To generate `AZURE_CREDENTIALS`:
+```bash
+az ad sp create-for-rbac --name "druid-poc-github" --role Contributor \
+  --scopes /subscriptions/<your-subscription-id> --sdk-auth
+```
+
+### Run the Pipeline
+
+Go to **Actions** tab in GitHub:
+
+| Workflow | How to run | What it does |
+|---|---|---|
+| **Create Demo** | Click → type `create` → Run | Spins up everything (~40 min) |
+| **Destroy Demo** | Click → type `destroy` → Run | Deletes everything (~15 min) |
+
+### Pipeline Stages (Create)
+
+```
+1. Validate confirmation ("create")
+2. Secret scan (Gitleaks) — fails if any credential found in code
+3. Configure AWS + Azure credentials
+4. Terraform apply — creates EKS + AKS + S3 + Azure Blob
+5. Deploy apps — Druid + PostgreSQL + MongoDB on both clusters
+6. Load data — Wikipedia (Druid), employees (PG), orders (Mongo)
+7. Migrate — EKS → AKS (AzCopy + pg_dump + mongodump)
+8. Validate — row/doc/segment counts match on both clusters
+```
+
+---
+
+## Pre-requisites (Local Run)
+
+Install these tools before running locally:
 
 | Tool      | Install                                      |
 |-----------|----------------------------------------------|
@@ -65,10 +116,11 @@ Install these tools before running:
 | Helm      | https://helm.sh/docs/intro/install/ |
 | AzCopy    | https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10 |
 
-Configure credentials:
+Configure credentials and set DB password:
 ```bash
-aws configure          # enter AWS Access Key, Secret, region: us-east-1
-az login               # browser login for Azure
+aws configure                    # enter AWS Access Key, Secret, region: us-east-1
+az login                         # browser login for Azure
+export DB_PASSWORD=yourpassword  # used for PostgreSQL + MongoDB on both clusters
 ```
 
 ---
@@ -214,6 +266,21 @@ Always run `make destroy` after the demo.
 
 ---
 
+## Security
+
+- **No credentials in code** — all secrets stored in GitHub Secrets (encrypted)
+- **Secret scanning** — Gitleaks runs as first pipeline stage, blocks deploy if any credential found in code
+- All 4 secrets managed via GitHub Actions:
+
+| Secret | Scope |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | AWS infrastructure + Druid S3 access |
+| `AWS_SECRET_ACCESS_KEY` | AWS infrastructure + Druid S3 access |
+| `AZURE_CREDENTIALS` | Azure infrastructure (service principal) |
+| `DB_PASSWORD` | PostgreSQL + MongoDB on **both** EKS and AKS |
+
+---
+
 ## Key Concepts Demonstrated
 
 | Concept | Where |
@@ -225,3 +292,5 @@ Always run `make destroy` after the demo.
 | PostgreSQL dump/restore | `scripts/3-migrate.sh` |
 | MongoDB dump/restore | `scripts/3-migrate.sh` |
 | Data validation between clusters | `scripts/4-validate.sh` |
+| Secret scanning in CI/CD (Gitleaks) | `.github/workflows/create.yml` |
+| All credentials as GitHub Secrets | GitHub → Settings → Secrets |
