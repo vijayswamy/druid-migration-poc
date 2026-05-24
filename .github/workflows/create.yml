@@ -1,0 +1,102 @@
+name: Create Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "create" to confirm spinning up cloud resources'
+        required: true
+
+jobs:
+  create:
+    name: Spin up EKS + AKS + Deploy + Migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "create" ]; then
+            echo "Type 'create' to confirm. Aborting."
+            exit 1
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install tools (kubectl, helm, azcopy)
+        run: |
+          # kubectl
+          curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+          # helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+          # azcopy
+          wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
+          tar -xf azcopy.tar.gz --strip-components=1
+          sudo mv azcopy /usr/local/bin/
+
+      - name: Inject AWS credentials into Helm values
+        run: |
+          sed -i "s/YOUR_AWS_ACCESS_KEY_ID/${{ secrets.AWS_ACCESS_KEY_ID }}/g" helm/druid-aws-values.yaml
+          sed -i "s|YOUR_AWS_SECRET_ACCESS_KEY|${{ secrets.AWS_SECRET_ACCESS_KEY }}|g" helm/druid-aws-values.yaml
+
+      - name: Terraform apply (create infra)
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Save Terraform state (for destroy job)
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state
+          path: terraform/terraform.tfstate
+          retention-days: 30
+
+      - name: Deploy apps on both clusters
+        run: bash scripts/1-deploy-apps.sh
+
+      - name: Load dummy data into EKS
+        run: bash scripts/2-load-data.sh
+
+      - name: Migrate data EKS → AKS
+        run: bash scripts/3-migrate.sh
+
+      - name: Validate migration
+        run: bash scripts/4-validate.sh
+
+      - name: Print UI access instructions
+        run: |
+          echo "================================================"
+          echo " DEMO READY!"
+          echo " To view Druid UI, run on your local machine:"
+          echo ""
+          echo " aws eks update-kubeconfig --region us-east-1 --name druid-poc-eks --alias eks-source"
+          echo " az aks get-credentials --resource-group druid-poc-rg --name druid-poc-aks --context aks-destination"
+          echo ""
+          echo " kubectl port-forward -n druid svc/druid-router 8888:8888 --context eks-source &"
+          echo " kubectl port-forward -n druid svc/druid-router 8889:8888 --context aks-destination &"
+          echo ""
+          echo " EKS: http://localhost:8888"
+          echo " AKS: http://localhost:8889"
+          echo "================================================"
