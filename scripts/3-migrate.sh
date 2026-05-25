@@ -4,11 +4,13 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 echo "========================================"
 echo " STEP 3: Migrate data EKS → AKS"
 echo "========================================"
 
-cd "$(dirname "$0")/../terraform"
+cd "$REPO_ROOT/terraform"
 S3_BUCKET=$(terraform output -raw s3_bucket_name)
 STORAGE_ACCOUNT=$(terraform output -raw azure_storage_account)
 STORAGE_KEY=$(terraform output -raw storage_account_key)

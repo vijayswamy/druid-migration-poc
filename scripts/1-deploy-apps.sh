@@ -4,6 +4,7 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PREFIX="druid-poc"
 AWS_REGION="us-east-1"
 
@@ -12,7 +13,7 @@ echo " STEP 1: Deploy apps on both clusters"
 echo "========================================"
 
 # Get S3 bucket name and storage account details from Terraform outputs
-cd "$(dirname "$0")/../terraform"
+cd "$REPO_ROOT/terraform"
 S3_BUCKET=$(terraform output -raw s3_bucket_name)
 STORAGE_ACCOUNT=$(terraform output -raw azure_storage_account)
 STORAGE_KEY=$(terraform output -raw storage_account_key)
@@ -64,7 +65,7 @@ kubectl create namespace databases --context eks-source --dry-run=client -o yaml
 helm upgrade --install postgresql bitnami/postgresql \
   --kube-context eks-source \
   --namespace databases \
-  --values ../helm/postgresql-values.yaml \
+  --values $REPO_ROOT/helm/postgresql-values.yaml \
   --set auth.postgresPassword="${DB_PASSWORD}" \
   --wait --timeout 5m
 
@@ -73,7 +74,7 @@ echo "=== Deploying MongoDB on EKS ==="
 helm upgrade --install mongodb bitnami/mongodb \
   --kube-context eks-source \
   --namespace databases \
-  --values ../helm/mongodb-values.yaml \
+  --values $REPO_ROOT/helm/mongodb-values.yaml \
   --set auth.rootPassword="${DB_PASSWORD}" \
   --set auth.password="${DB_PASSWORD}" \
   --wait --timeout 5m
@@ -84,7 +85,7 @@ kubectl create namespace druid --context eks-source --dry-run=client -o yaml | k
 helm upgrade --install druid druid-helm/druid \
   --kube-context eks-source \
   --namespace druid \
-  --values ../helm/druid-aws-values.yaml \
+  --values $REPO_ROOT/helm/druid-aws-values.yaml \
   --values /tmp/druid-aws-override.yaml \
   --timeout 10m
 
@@ -112,7 +113,7 @@ kubectl create namespace databases --context aks-destination --dry-run=client -o
 helm upgrade --install postgresql bitnami/postgresql \
   --kube-context aks-destination \
   --namespace databases \
-  --values ../helm/postgresql-values.yaml \
+  --values $REPO_ROOT/helm/postgresql-values.yaml \
   --set auth.postgresPassword="${DB_PASSWORD}" \
   --wait --timeout 5m
 
@@ -121,7 +122,7 @@ echo "=== Deploying MongoDB on AKS ==="
 helm upgrade --install mongodb bitnami/mongodb \
   --kube-context aks-destination \
   --namespace databases \
-  --values ../helm/mongodb-values.yaml \
+  --values $REPO_ROOT/helm/mongodb-values.yaml \
   --set auth.rootPassword="${DB_PASSWORD}" \
   --set auth.password="${DB_PASSWORD}" \
   --wait --timeout 5m
@@ -132,7 +133,7 @@ kubectl create namespace druid --context aks-destination --dry-run=client -o yam
 helm upgrade --install druid druid-helm/druid \
   --kube-context aks-destination \
   --namespace druid \
-  --values ../helm/druid-azure-values.yaml \
+  --values $REPO_ROOT/helm/druid-azure-values.yaml \
   --values /tmp/druid-azure-override.yaml \
   --timeout 10m
 
