@@ -32,3 +32,9 @@ output "azure_storage_container" {
   description = "Azure Blob container name"
   value       = module.azure.storage_container_name
 }
+
+output "storage_account_key" {
+  description = "Azure Storage Account primary access key"
+  value       = module.azure.storage_account_key
+  sensitive   = true
+}
