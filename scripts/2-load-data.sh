@@ -65,10 +65,10 @@ echo ""
 echo "=== Loading Wikipedia sample into Druid (EKS) ==="
 echo "    This uses Druid's built-in sample — no data files needed."
 
-echo "  Waiting for Druid router pod to be Running..."
+echo "  Waiting for Druid router pod to be Running (up to 15m on cold start)..."
 kubectl wait pod -n druid --context eks-source \
   -l app=druid,component=router \
-  --for=condition=Ready --timeout=5m
+  --for=condition=Ready --timeout=15m
 
 echo "  Port-forwarding Druid router to localhost:8888..."
 kubectl port-forward -n druid svc/druid-router 8888:8888 --context eks-source &
