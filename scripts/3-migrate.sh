@@ -28,7 +28,7 @@ echo "=== [1/3] Migrating PostgreSQL ==="
 
 echo "  Dumping from EKS..."
 kubectl exec -n databases postgresql-0 --context eks-source -- \
-  pg_dump -U postgres druid_metadata > "${DUMP_DIR}/druid_metadata.sql"
+  bash -c "PGPASSWORD='${DB_PASSWORD}' pg_dump -U postgres druid_metadata" > "${DUMP_DIR}/druid_metadata.sql"
 
 echo "  Copying dump into AKS pod..."
 kubectl cp "${DUMP_DIR}/druid_metadata.sql" \
@@ -37,7 +37,7 @@ kubectl cp "${DUMP_DIR}/druid_metadata.sql" \
 
 echo "  Restoring on AKS..."
 kubectl exec -n databases postgresql-0 --context aks-destination -- \
-  psql -U postgres -d druid_metadata -f /tmp/druid_metadata.sql
+  bash -c "PGPASSWORD='${DB_PASSWORD}' psql -U postgres -d druid_metadata -f /tmp/druid_metadata.sql"
 
 echo "  PostgreSQL migration done."
 

@@ -15,7 +15,7 @@ echo ""
 echo "=== Loading dummy data into PostgreSQL (EKS) ==="
 
 kubectl exec -n databases postgresql-0 --context eks-source -- \
-  psql -U postgres -d druid_metadata -c "
+  bash -c "PGPASSWORD='${DB_PASSWORD}' psql -U postgres -d druid_metadata -c \"
     CREATE TABLE IF NOT EXISTS employees (
       id        SERIAL PRIMARY KEY,
       name      VARCHAR(100),
@@ -31,7 +31,7 @@ kubectl exec -n databases postgresql-0 --context eks-source -- \
       ('Deepa',  'DevOps',   80000, '2020-11-05')
     ON CONFLICT DO NOTHING;
     SELECT COUNT(*) AS total_employees FROM employees;
-  "
+  \""
 
 echo "PostgreSQL dummy data loaded."
 

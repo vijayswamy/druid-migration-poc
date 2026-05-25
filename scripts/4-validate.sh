@@ -32,10 +32,10 @@ echo ""
 echo "=== [1/3] PostgreSQL Validation ==="
 
 EKS_PG_COUNT=$(kubectl exec -n databases postgresql-0 --context eks-source -- \
-  psql -U postgres -d druid_metadata -t -c "SELECT COUNT(*) FROM employees;" | tr -d ' ')
+  bash -c "PGPASSWORD='${DB_PASSWORD}' psql -U postgres -d druid_metadata -t -c 'SELECT COUNT(*) FROM employees;'" | tr -d ' ')
 
 AKS_PG_COUNT=$(kubectl exec -n databases postgresql-0 --context aks-destination -- \
-  psql -U postgres -d druid_metadata -t -c "SELECT COUNT(*) FROM employees;" | tr -d ' ')
+  bash -c "PGPASSWORD='${DB_PASSWORD}' psql -U postgres -d druid_metadata -t -c 'SELECT COUNT(*) FROM employees;'" | tr -d ' ')
 
 check "employees row count" "${EKS_PG_COUNT}" "${AKS_PG_COUNT}"
 
