@@ -77,7 +77,18 @@ AKS_PF_PID=$!
 sleep 5
 
 EKS_SEGMENTS=$(curl -s http://localhost:8181/druid/coordinator/v1/datasources/wikipedia/segments | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-AKS_SEGMENTS=$(curl -s http://localhost:8182/druid/coordinator/v1/datasources/wikipedia/segments | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+
+# AKS coordinator needs time to discover segments after AzCopy — retry up to 5m
+echo "  Waiting for AKS Druid coordinator to load segments (up to 5m)..."
+AKS_SEGMENTS="0"
+for i in $(seq 1 10); do
+  AKS_SEGMENTS=$(curl -s http://localhost:8182/druid/coordinator/v1/datasources/wikipedia/segments | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+  if [ "${AKS_SEGMENTS}" -gt 0 ] 2>/dev/null; then
+    break
+  fi
+  echo "  AKS: 0 segments so far — sleeping 30s (attempt ${i}/10)..."
+  sleep 30
+done
 
 kill ${EKS_PF_PID} ${AKS_PF_PID} 2>/dev/null
 
@@ -95,7 +106,9 @@ echo ""
 if [ "${FAIL}" -eq 0 ]; then
   echo " ALL CHECKS PASSED — Migration successful!"
   echo " You can now switch traffic to AKS."
+  echo "========================================"
 else
   echo " SOME CHECKS FAILED — Review above before switching traffic."
+  echo "========================================"
+  exit 1
 fi
-echo "========================================"

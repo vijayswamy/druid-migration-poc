@@ -61,8 +61,9 @@ kubectl cp "databases/${MONGO_POD_EKS}:/tmp/mongodump" "${DUMP_DIR}/mongodump" \
   --context eks-source
 
 echo "  Copying dump into AKS pod (pod: ${MONGO_POD_AKS})..."
+# Copy to /tmp/ so the dump lands at /tmp/mongodump/appdb/ not /tmp/mongodump/mongodump/appdb/
 kubectl cp "${DUMP_DIR}/mongodump" \
-  "databases/${MONGO_POD_AKS}:/tmp/mongodump" \
+  "databases/${MONGO_POD_AKS}:/tmp/" \
   --context aks-destination
 
 echo "  Restoring on AKS..."
