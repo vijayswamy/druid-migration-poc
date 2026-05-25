@@ -65,6 +65,22 @@ jobs:
           sed -i "s/YOUR_AWS_ACCESS_KEY_ID/${{ secrets.AWS_ACCESS_KEY_ID }}/g" helm/druid-aws-values.yaml
           sed -i "s|YOUR_AWS_SECRET_ACCESS_KEY|${{ secrets.AWS_SECRET_ACCESS_KEY }}|g" helm/druid-aws-values.yaml
 
+      - name: Restore Terraform state (if available from previous run)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARTIFACT_ID=$(gh api "repos/${{ github.repository }}/actions/artifacts?name=terraform-state&per_page=1" \
+            --jq '.artifacts[0] | select(.expired==false) | .id' 2>/dev/null || true)
+          if [ -n "$ARTIFACT_ID" ]; then
+            echo "Found terraform-state artifact ID: $ARTIFACT_ID — restoring state"
+            gh api "repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/tf-state.zip
+            unzip -o /tmp/tf-state.zip -d terraform/
+            echo "Terraform state restored."
+          else
+            echo "No previous state artifact found — starting fresh."
+          fi
+
       - name: Terraform apply (create infra)
         run: |
           cd terraform
