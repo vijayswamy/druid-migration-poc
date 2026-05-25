@@ -60,6 +60,11 @@ echo "=== Configuring kubectl for EKS (source) ==="
 aws eks update-kubeconfig --region "${AWS_REGION}" --name "${EKS_NAME}" --alias eks-source
 
 echo ""
+echo "=== Setting default StorageClass on EKS (gp2) ==="
+kubectl annotate storageclass gp2 storageclass.kubernetes.io/is-default-class=true \
+  --context eks-source --overwrite
+
+echo ""
 echo "=== Deploying PostgreSQL on EKS ==="
 kubectl create namespace databases --context eks-source --dry-run=client -o yaml | kubectl apply --context eks-source -f -
 helm upgrade --install postgresql bitnami/postgresql \
