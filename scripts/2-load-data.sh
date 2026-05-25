@@ -41,8 +41,10 @@ echo "PostgreSQL dummy data loaded."
 echo ""
 echo "=== Loading dummy data into MongoDB (EKS) ==="
 
-kubectl exec -n databases mongodb-0 --context eks-source -- \
-  mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --eval "
+MONGO_POD=$(kubectl get pods -n databases --context eks-source \
+  -l app.kubernetes.io/name=mongodb -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n databases "${MONGO_POD}" --context eks-source -- \
+  mongosh appdb -u appuser -p "${DB_PASSWORD}" --authenticationDatabase appdb --eval "
     db.orders.drop();
     db.orders.insertMany([
       { order_id: 1, customer: 'Vijay',  product: 'Laptop',  amount: 75000, status: 'delivered' },

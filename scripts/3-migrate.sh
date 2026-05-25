@@ -47,21 +47,26 @@ echo "  PostgreSQL migration done."
 echo ""
 echo "=== [2/3] Migrating MongoDB ==="
 
-echo "  Dumping from EKS..."
-kubectl exec -n databases mongodb-0 --context eks-source -- \
+MONGO_POD_EKS=$(kubectl get pods -n databases --context eks-source \
+  -l app.kubernetes.io/name=mongodb -o jsonpath='{.items[0].metadata.name}')
+MONGO_POD_AKS=$(kubectl get pods -n databases --context aks-destination \
+  -l app.kubernetes.io/name=mongodb -o jsonpath='{.items[0].metadata.name}')
+
+echo "  Dumping from EKS (pod: ${MONGO_POD_EKS})..."
+kubectl exec -n databases "${MONGO_POD_EKS}" --context eks-source -- \
   mongodump --uri="mongodb://appuser:${DB_PASSWORD}@localhost:27017/appdb?authSource=appdb" \
   --out=/tmp/mongodump
 
-kubectl cp databases/mongodb-0:/tmp/mongodump "${DUMP_DIR}/mongodump" \
+kubectl cp "databases/${MONGO_POD_EKS}:/tmp/mongodump" "${DUMP_DIR}/mongodump" \
   --context eks-source
 
-echo "  Copying dump into AKS pod..."
+echo "  Copying dump into AKS pod (pod: ${MONGO_POD_AKS})..."
 kubectl cp "${DUMP_DIR}/mongodump" \
-  databases/mongodb-0:/tmp/mongodump \
+  "databases/${MONGO_POD_AKS}:/tmp/mongodump" \
   --context aks-destination
 
 echo "  Restoring on AKS..."
-kubectl exec -n databases mongodb-0 --context aks-destination -- \
+kubectl exec -n databases "${MONGO_POD_AKS}" --context aks-destination -- \
   mongorestore --uri="mongodb://appuser:${DB_PASSWORD}@localhost:27017/appdb?authSource=appdb" \
   /tmp/mongodump
 

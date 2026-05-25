@@ -45,12 +45,17 @@ check "employees row count" "${EKS_PG_COUNT}" "${AKS_PG_COUNT}"
 echo ""
 echo "=== [2/3] MongoDB Validation ==="
 
-EKS_MONGO_COUNT=$(kubectl exec -n databases mongodb-0 --context eks-source -- \
-  mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --quiet \
+MONGO_POD_EKS=$(kubectl get pods -n databases --context eks-source \
+  -l app.kubernetes.io/name=mongodb -o jsonpath='{.items[0].metadata.name}')
+MONGO_POD_AKS=$(kubectl get pods -n databases --context aks-destination \
+  -l app.kubernetes.io/name=mongodb -o jsonpath='{.items[0].metadata.name}')
+
+EKS_MONGO_COUNT=$(kubectl exec -n databases "${MONGO_POD_EKS}" --context eks-source -- \
+  mongosh appdb -u appuser -p "${DB_PASSWORD}" --authenticationDatabase appdb --quiet \
   --eval "db.orders.countDocuments()")
 
-AKS_MONGO_COUNT=$(kubectl exec -n databases mongodb-0 --context aks-destination -- \
-  mongosh appdb -u appuser -p ${DB_PASSWORD} --authenticationDatabase appdb --quiet \
+AKS_MONGO_COUNT=$(kubectl exec -n databases "${MONGO_POD_AKS}" --context aks-destination -- \
+  mongosh appdb -u appuser -p "${DB_PASSWORD}" --authenticationDatabase appdb --quiet \
   --eval "db.orders.countDocuments()")
 
 check "orders document count" "${EKS_MONGO_COUNT}" "${AKS_MONGO_COUNT}"
