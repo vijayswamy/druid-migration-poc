@@ -67,7 +67,7 @@ helm upgrade --install postgresql bitnami/postgresql \
   --namespace databases \
   --values $REPO_ROOT/helm/postgresql-values.yaml \
   --set auth.postgresPassword="${DB_PASSWORD}" \
-  --wait --timeout 5m
+  --wait --timeout 10m --cleanup-on-fail
 
 echo ""
 echo "=== Deploying MongoDB on EKS ==="
@@ -77,7 +77,7 @@ helm upgrade --install mongodb bitnami/mongodb \
   --values $REPO_ROOT/helm/mongodb-values.yaml \
   --set auth.rootPassword="${DB_PASSWORD}" \
   --set auth.password="${DB_PASSWORD}" \
-  --wait --timeout 5m
+  --wait --timeout 10m --cleanup-on-fail
 
 echo ""
 echo "=== Deploying Druid on EKS ==="
@@ -115,7 +115,7 @@ helm upgrade --install postgresql bitnami/postgresql \
   --namespace databases \
   --values $REPO_ROOT/helm/postgresql-values.yaml \
   --set auth.postgresPassword="${DB_PASSWORD}" \
-  --wait --timeout 5m
+  --wait --timeout 10m --cleanup-on-fail
 
 echo ""
 echo "=== Deploying MongoDB on AKS ==="
@@ -125,7 +125,7 @@ helm upgrade --install mongodb bitnami/mongodb \
   --values $REPO_ROOT/helm/mongodb-values.yaml \
   --set auth.rootPassword="${DB_PASSWORD}" \
   --set auth.password="${DB_PASSWORD}" \
-  --wait --timeout 5m
+  --wait --timeout 10m --cleanup-on-fail
 
 echo ""
 echo "=== Deploying Druid on AKS ==="
