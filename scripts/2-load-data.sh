@@ -65,10 +65,18 @@ echo ""
 echo "=== Loading Wikipedia sample into Druid (EKS) ==="
 echo "    This uses Druid's built-in sample — no data files needed."
 
-DRUID_POD=$(kubectl get pods -n druid --context eks-source -l app=druid,component=router -o jsonpath='{.items[0].metadata.name}')
+echo "  Waiting for Druid router pod to be Running..."
+kubectl wait pod -n druid --context eks-source \
+  -l app=druid,component=router \
+  --for=condition=Ready --timeout=5m
 
-kubectl exec -n druid --context eks-source "${DRUID_POD}" -- \
-  curl -s -X POST http://localhost:8888/druid/indexer/v1/task \
+echo "  Port-forwarding Druid router to localhost:8888..."
+kubectl port-forward -n druid svc/druid-router 8888:8888 --context eks-source &
+DRUID_PF_PID=$!
+sleep 5
+
+echo "  Submitting Wikipedia ingestion task..."
+curl -s -X POST http://localhost:8888/druid/indexer/v1/task \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "index_parallel",
@@ -102,6 +110,8 @@ kubectl exec -n druid --context eks-source "${DRUID_POD}" -- \
       "tuningConfig": { "type": "index_parallel" }
     }
   }'
+
+kill ${DRUID_PF_PID} 2>/dev/null || true
 
 echo ""
 echo "Druid Wikipedia ingestion submitted. Wait 3-5 mins for segments to appear."
