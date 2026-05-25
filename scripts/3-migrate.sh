@@ -61,15 +61,15 @@ kubectl cp "databases/${MONGO_POD_EKS}:/tmp/mongodump" "${DUMP_DIR}/mongodump" \
   --context eks-source
 
 echo "  Copying dump into AKS pod (pod: ${MONGO_POD_AKS})..."
-# Copy to /tmp/ so the dump lands at /tmp/mongodump/appdb/ not /tmp/mongodump/mongodump/appdb/
 kubectl cp "${DUMP_DIR}/mongodump" \
-  "databases/${MONGO_POD_AKS}:/tmp/" \
+  "databases/${MONGO_POD_AKS}:/tmp/mongodump" \
   --context aks-destination
 
 echo "  Restoring on AKS..."
+# Point at /tmp/mongodump/appdb — mongorestore 100.17+ skips when given parent dir with prelude.json
 kubectl exec -n databases "${MONGO_POD_AKS}" --context aks-destination -- \
   mongorestore --uri="mongodb://appuser:${DB_PASSWORD}@localhost:27017/appdb?authSource=appdb" \
-  /tmp/mongodump
+  --db=appdb /tmp/mongodump/appdb
 
 echo "  MongoDB migration done."
 
