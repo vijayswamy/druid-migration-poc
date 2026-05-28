@@ -13,3 +13,4 @@ helm/*.bak
 
 # macOS
 .DS_Store
+.mcp.json
