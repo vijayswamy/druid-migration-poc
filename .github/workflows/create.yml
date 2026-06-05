@@ -109,6 +109,16 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: bash scripts/3-migrate.sh
 
+      - name: Delta sync (new data written to EKS since initial migration)
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: bash scripts/3b-sync-delta.sh
+
+      - name: Cutover simulation (pause EKS ingestion + final sync)
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: bash scripts/3c-cutover.sh
+
       - name: Validate migration
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

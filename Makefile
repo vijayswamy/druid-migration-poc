@@ -12,8 +12,8 @@
 
 .PHONY: up apply deploy load migrate validate destroy
 
-## ONE COMMAND: full demo end-to-end (infra → apps → data → migration → validation)
-up: apply deploy load migrate validate
+## ONE COMMAND: full demo end-to-end (infra → apps → data → migrate → delta sync → cutover → validate)
+up: apply deploy load migrate delta cutover validate
 	@echo ""
 	@echo "========================================"
 	@echo " DEMO READY!"
@@ -37,6 +37,14 @@ load:
 ## Migrate PostgreSQL + MongoDB + Druid segments to AKS
 migrate:
 	bash scripts/3-migrate.sh
+
+## Delta sync — capture new data written to EKS after initial migration
+delta:
+	bash scripts/3b-sync-delta.sh
+
+## Cutover — pause EKS ingestion, final sync, switch traffic to AKS
+cutover:
+	bash scripts/3c-cutover.sh
 
 ## Validate data matches between EKS and AKS
 validate:
